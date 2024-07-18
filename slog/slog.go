@@ -128,6 +128,7 @@ func (l *Logger) logFmt(lc *logctx.LogContext, msg string, v ...any) (string, []
 		args = append(args, key)
 		args = append(args, values[idx])
 	}
+	args = append(args, "source", l.getSrouce())
 
 	return msg, args
 }
