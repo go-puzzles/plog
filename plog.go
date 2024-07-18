@@ -2,9 +2,7 @@ package plog
 
 import (
 	"context"
-	"encoding/json"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/go-puzzles/plog/level"
@@ -77,36 +75,10 @@ func Errorc(ctx context.Context, msg string, v ...any) {
 	logger.Errorc(ctx, msg, v...)
 }
 
-// TimeFuncDuration returns the duration consumed by function.
-// It has specified usage like:
-//
-//	    f := TimeFuncDuration()
-//		   DoSomething()
-//		   duration := f()
-func TimeFuncDuration() func() time.Duration {
-	start := time.Now()
-	return func() time.Duration {
-		return time.Since(start)
+func PanicError(err error, v ...any) {
+	if err == nil {
+		return
 	}
-}
 
-func TimeDurationDefer(prefix ...string) func() {
-	ps := "operation"
-	if len(prefix) != 0 {
-		ps = strings.Join(prefix, ", ")
-	}
-	start := time.Now()
-
-	return func() {
-		Infof("%v elapsed time: %v", ps, time.Since(start))
-	}
-}
-
-func Jsonify(v any) string {
-	d, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		logger.Errorf("jsonify error: %v", err)
-		panic(err)
-	}
-	return string(d)
+	logger.PanicError(err, v...)
 }

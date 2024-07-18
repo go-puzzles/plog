@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+const (
+	badKey = "<BadKey>"
+)
+
 func ParseFmtStr(format string) (msg string, isKV []bool, keys, descs []string) {
 	if json.Valid([]byte(format)) {
 		return format, nil, nil, nil
@@ -54,7 +58,7 @@ func ParseFmtKeyValue(msg string, v ...any) (m string, keys, values []string, er
 	for i, kv := range isKV {
 		var val any
 		if i >= len(v) {
-			val = "<BadKey>"
+			val = badKey
 		} else {
 			val = v[i]
 		}
@@ -64,6 +68,7 @@ func ParseFmtKeyValue(msg string, v ...any) (m string, keys, values []string, er
 			msgV = append(msgV, val)
 		}
 	}
+
 	msg = fmt.Sprintf(msgTmpl, msgV...)
 	if len(objV) != len(desc) {
 		return "", nil, nil, errors.New("invalid numbers of keys and values")
@@ -73,5 +78,32 @@ func ParseFmtKeyValue(msg string, v ...any) (m string, keys, values []string, er
 		values = append(values, fmt.Sprintf(desc[i], objV[i]))
 	}
 
+	if len(isKV) < len(v) {
+		keys, values = parseRemains(v[len(isKV):], keys, values)
+	}
+
 	return msg, keys, values, nil
+}
+
+func parseRemains(remains []any, keys, vals []string) ([]string, []string) {
+	var key, val string
+	for len(remains) > 0 {
+		key, val, remains = getKVParis(remains)
+		keys = append(keys, key)
+		vals = append(vals, val)
+	}
+
+	return keys, vals
+}
+
+func getKVParis(kvs []any) (string, string, []any) {
+	switch x := kvs[0].(type) {
+	case string:
+		if len(kvs) == 1 {
+			return badKey, x, nil
+		}
+		return x, fmt.Sprintf("%v", kvs[1]), kvs[2:]
+	default:
+		return badKey, fmt.Sprintf("%v", x), kvs[1:]
+	}
 }

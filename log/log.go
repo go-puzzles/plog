@@ -100,7 +100,7 @@ func (l *Logger) logFmt(lc *logctx.LogContext, msg string, v ...any) string {
 
 	if len(lc.Group) != 0 {
 		grpMsg := strings.Join(lc.Group, ":")
-		msg = fmt.Sprintf("%s %s", grpMsg, msg)
+		msg = fmt.Sprintf("%s: %s", grpMsg, msg)
 	}
 
 	var buf bytes.Buffer
@@ -123,7 +123,6 @@ func (l *Logger) logc(c context.Context, lb logable, msg string, v ...any) {
 	if lc == nil {
 		lc = &logctx.LogContext{}
 	}
-
 	msg = l.logFmt(lc, msg, v...)
 	for _, line := range strings.Split(msg, "\n") {
 		lb.Output(l.callDepth, line)
