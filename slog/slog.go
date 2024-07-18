@@ -1,7 +1,6 @@
 package slog
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -11,7 +10,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/go-logfmt/logfmt"
 	"github.com/go-puzzles/plog/level"
 	logctx "github.com/go-puzzles/plog/log-ctx"
 	"github.com/go-puzzles/plog/parser"
@@ -110,41 +108,28 @@ func (l *Logger) logc(c context.Context, lb logable, msg string, v ...any) {
 		lc = &logctx.LogContext{}
 	}
 
-	msg = l.logFmt(lc, msg, v...)
+	msg, args := l.logFmt(lc, msg, v...)
 
-	lb(c, msg)
+	lb(c, msg, args...)
 }
 
-func (l *Logger) logFmt(lc *logctx.LogContext, msg string, v ...any) string {
+func (l *Logger) logFmt(lc *logctx.LogContext, msg string, v ...any) (string, []any) {
 	s, keys, values, err := parser.ParseFmtKeyValue(msg, v...)
 	if err != nil {
-		return msg + " " + err.Error()
+		return msg + " " + err.Error(), nil
 	}
 
 	msg = s
 	keys = append(keys, lc.Keys...)
 	values = append(values, lc.Values...)
 
-	var buf bytes.Buffer
-
-	encoder := logfmt.NewEncoder(&buf)
-
-	for i := 0; i < len(keys); i++ {
-		encoder.EncodeKeyval(keys[i], values[i])
+	var args []any
+	for idx, key := range keys {
+		args = append(args, key)
+		args = append(args, values[idx])
 	}
 
-	if len(lc.Group) != 0 {
-		grpMsg := strings.Join(lc.Group, ":")
-		encoder.EncodeKeyval("chains", grpMsg)
-	}
-	encoder.EncodeKeyval("source", l.getSrouce())
-
-	str := buf.String()
-	if str == "" {
-		return msg
-	}
-
-	return msg + " " + str
+	return msg, args
 }
 
 func (l *Logger) Infoc(ctx context.Context, msg string, v ...any) {
